@@ -1,4 +1,10 @@
-{ config, inputs, pkgs, lib, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
 {
   imports = [
     inputs.nixos-hardware.nixosModules.common-cpu-amd
@@ -7,6 +13,8 @@
     inputs.nixos-hardware.nixosModules.common-gpu-nvidia-nonprime
     inputs.nixos-hardware.nixosModules.common-pc
     inputs.nixos-hardware.nixosModules.common-pc-ssd
+
+    ./specialisation.nix
   ];
 
   # Generated from nixos-generate-config
@@ -18,8 +26,6 @@
     "sd_mod"
   ];
   boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ];
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -83,5 +89,38 @@
     initialHashedPassword = ""; # FIXME
   };
 
+  boot.kernelModules = [
+    "kvm-amd"
+    "acpi_call"
+    "nct6687"
+    "iwlwifi"
+  ];
+
+  boot.blacklistedKernelModules = [
+    "amdgpu"
+    "nouveau"
+    "ee1004"
+  ];
+
+  boot.extraModulePackages = with config.boot.kernelPackages; [
+    nct6687d
+    acpi_call
+  ];
+
+  hardware.bluetooth.enable = false;
+  hardware.enableAllFirmware = true;
+  hardware.enableRedistributableFirmware = true;
+
+  networking.hostName = "desktop";
+  networking.networkmanager.enable = true;
+  networking.networkmanager.wifi.powersave = false;
+  networking.firewall.enable = true;
+
   system.stateVersion = "24.05";
+
+  boot.extraModprobeConfig = ''
+    options iwlwifi 11n_disable=8
+  '';
+
+  services.openssh.enable = true;
 }
